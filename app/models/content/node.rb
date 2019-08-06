@@ -25,7 +25,7 @@ class Content::Node < ApplicationRecord
         if previous_revisions.present?
           previous_revisions.destroy_all
         end
-        
+
         unpublished_revisions.create(field: field, value: value, node_id: self.id, casebook_id: casebook_id_for_revision, node_parent_id: self.copy_of_id)
       end
     end
@@ -33,7 +33,11 @@ class Content::Node < ApplicationRecord
 
   def formatted_headnote
     unless self.headnote.blank?
-      headnote_html = Nokogiri::HTML self.headnote {|config| config.strict.noblanks}
+      if H2o::Application.config.pandoc_export
+        headnote_html = Nokogiri::HTML.fragment self.headnote {|config| config.strict.noblanks}
+      else
+        headnote_html = Nokogiri::HTML self.headnote {|config| config.strict.noblanks}
+      end
       headnote_html.to_html.html_safe
     end
   end
