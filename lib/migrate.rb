@@ -52,7 +52,7 @@ module Migrate
           imported_resource = object
 
           if imported_resource.nil?
-            imported_resource = Default.create name: "[Missing #{item.actual_object_type} \##{item.actual_object_id}]",
+            imported_resource = Link.create name: "[Missing #{item.actual_object_type} \##{item.actual_object_id}]",
               url: "https://h2o.law.harvard.edu/#{item.actual_object_type.downcase}s/#{item.actual_object_id}"
           end
 
@@ -70,7 +70,7 @@ module Migrate
             imported_resource = imported_resource.annotatable
 
             if imported_resource.nil?
-              imported_resource = Default.create name: "[Missing annotated #{object.annotatable_type} \##{object.annotatable_id}]",
+              imported_resource = Link.create name: "[Missing annotated #{object.annotatable_type} \##{object.annotatable_id}]",
                 url: "https://h2o.law.harvard.edu/collages/#{object_id}"
             end
           end
@@ -102,7 +102,7 @@ module Migrate
     def migrate_annotations(collage, resource)
       return unless resource.resource.class.in? [Case, TextBlock]
 
-      document = Nokogiri::HTML(resource.resource.content) {|config| config.noblanks}
+      document = HTMLUtils.parse(resource.resource.content)
       idx = 0
       document.traverse do |node|
         next if node.text?
@@ -110,7 +110,7 @@ module Migrate
         idx += 1
       end
 
-      html = Nokogiri::HTML(resource.resource.content) {|config| config.noblanks}
+      html = HTMLUtils.parse(resource.resource.content)
       idx = 0
       html.traverse do |node|
         next if node.text?
@@ -118,7 +118,7 @@ module Migrate
         idx += 1
       end
 
-      nodes = HTMLHelpers.process_p_nodes html
+      nodes = html.at('body').children
       collage_annotations = Migrate::Annotation.where(annotated_item_id: collage.id)
 
       collage_annotations.each do |annotation|

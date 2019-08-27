@@ -4,6 +4,8 @@ class Content::Resource < Content::Child
   belongs_to :resource, polymorphic: true, inverse_of: :casebooks, required: true
   has_many :annotations, class_name: 'Content::Annotation', dependent: :destroy
 
+  after_destroy :update_resource_counter_cache, if: :resource_annotatable?
+
   accepts_nested_attributes_for :resource
 
   def can_delete?
@@ -11,8 +13,7 @@ class Content::Resource < Content::Child
   end
 
   def paragraph_nodes
-    HTMLHelpers.process_p_nodes(
-      Nokogiri::HTML(resource.content) {|config| config.strict.noblanks})
+    HTMLUtils.parse(resource.content).at('body').children
   end
 
   def annotated_paragraphs
@@ -20,7 +21,9 @@ class Content::Resource < Content::Child
     #export_footnote_index determines how many astericks are next to a link or note annotation in the exported version of a resource
     export_footnote_index = 0
 
-    annotations.order(:start_paragraph, :id).each do |annotation|
+    # exclude annotations with negative offsets; these are the result of the content being edited
+    # and the offset range that was annotated being removed such that we don't know where to place it now
+    annotations.where.not(global_start_offset: -1).order(:start_paragraph, :id).each do |annotation|
       if annotation.kind.in? %w(note link)
         export_footnote_index += 1
       end
@@ -59,5 +62,16 @@ class Content::Resource < Content::Child
 
   def has_elisions?
     annotations.where(kind: ["elide", "replace"]).any?
+  end
+
+  private
+
+  def resource_annotatable?
+    resource.class < ContentAnnotatable
+  end
+
+  def update_resource_counter_cache
+    resource.update_column :annotations_count,
+                           resource.annotations.count
   end
 end

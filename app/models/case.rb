@@ -1,4 +1,6 @@
 class Case < ApplicationRecord
+  include ContentAnnotatable
+
   include Capapi::ModelHelpers
   CAPAPI_CLASS = Capapi::Case
 
@@ -6,24 +8,12 @@ class Case < ApplicationRecord
 
   include Rails.application.routes.url_helpers
 
-  acts_as_taggable_on :tags
-
   has_many :casebooks, inverse_of: :contents, class_name: 'Content::Casebook', foreign_key: :resource_id
   belongs_to :case_court, optional: true, inverse_of: :cases
 
   accepts_nested_attributes_for :case_court,
     allow_destroy: true,
     reject_if: proc { |att| att['name'].blank? || att['name_abbreviation'].blank? }
-
-  def self.annotated
-    where('id IN (SELECT DISTINCT content_nodes.resource_id FROM content_nodes INNER JOIN content_annotations ON content_nodes.id = content_annotations.resource_id WHERE content_nodes.resource_type = ?)', self.name)
-  end
-
-  def annotations
-    Content::Annotation
-      .joins(:resource)
-      .where(content_nodes: {resource_type: self.class.name, resource_id: id})
-  end
 
   def display_name
     (name_abbreviation.blank?) ? name : name_abbreviation
@@ -66,13 +56,6 @@ class Case < ApplicationRecord
     boolean :public
 
     string :klass, :stored => true
-    boolean :primary do
-      false
-    end
-    boolean :secondary do
-      false
-    end
-
     string(:verified_professor, stored: true)
   end
   
@@ -112,7 +95,7 @@ class Case < ApplicationRecord
     resources = Content::Resource.where(resource_type: self.class.name, resource_id: self.id)
     resources.each do |resource|
       casebook = resource.casebook
-      links += "<div><a href=#{resource_path(casebook, resource)}>#{html_escape(casebook.title)} [#{casebook.created_at.year}] - #{html_escape(casebook.owner)}</a></div>".html_safe
+      links += "<div><a href=#{resource_path(casebook, resource)}>#{casebook.title} [#{casebook.created_at.year}] - #{casebook.owner}</a></div>"
     end
     links.html_safe
   end

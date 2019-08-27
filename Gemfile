@@ -9,10 +9,8 @@ gem 'puma', '~> 3.12'
 gem 'webpacker', '>= 4.0.x'
 
 gem 'actionpack-page_caching'
-gem 'acts-as-taggable-on', git: 'https://github.com/mbleigh/acts-as-taggable-on.git', ref: '9bb5738'
 gem 'ancestry'
 gem 'authlogic'
-gem 'bcrypt'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.1.0', require: false
 gem 'cancancan'
@@ -21,39 +19,27 @@ gem 'ckeditor'
 gem 'coveralls', require: false
 gem 'daemons', '1.0.10'
 gem 'deep_cloneable'
-gem 'delayed_job_active_record'
-gem 'delayed_job'
+gem 'diff_match_patch'
 gem 'draper'
 gem 'erubi'
 gem 'erubis'
 gem 'exception_notification'
 gem 'exception_handler'
-gem 'fastercsv'
-gem 'ffi', '>= 1.9.24'
-gem 'formtastic'
 gem 'hamlit'
 gem 'high_voltage'
 gem 'humanize'
-gem 'http-cookie'
-gem 'httparty'
-gem 'jbuilder', '~> 2.6.3'
 gem 'json', '1.8.6'
-gem 'kaminari'
-gem 'loofah', '~> 2.2.3'
-gem 'loofah-activerecord', '~> 2.0.0'
 gem 'nilify_blanks'
-gem 'nokogiri', '~> 1.6'
+gem 'nokogiri'
+gem 'nokogumbo'
 gem 'paperclip', '~> 5.2.0'
-gem 'progress_bar'
 gem 'rails-observers'
 gem 'rails_admin', '~> 1.3.0'
 gem 'rails_admin_import'
 gem 'rails-html-sanitizer'
-gem 'RedCloth'
+gem 'sanitize'
 gem 'rest-client', '~> 1.8.0'
 gem 'rubyzip', '>= 1.2.2'
-gem 'scrypt'
-gem 'select2-rails'
 gem 'simple_form'
 gem 'sunspot_rails'
 gem 'warden'
@@ -65,7 +51,6 @@ gem 'methadone', require: false
 gem 'wkhtmltopdf-binary', require: false
 
 group :development do
-  gem 'annotate'
   gem 'sunspot_solr'
   gem 'web-console'
 
@@ -89,12 +74,11 @@ group :development, :test do
   gem 'minitest-spec-rails'
   gem 'minitest-reporters'
   gem 'poltergeist'
+  gem 'rb-readline'
   gem 'pry-byebug'
   gem 'simplecov'
   gem 'm'
   gem 'selenium-webdriver'
-
-  gem 'wrong', git: 'https://github.com/pludoni/wrong.git', ref: 'be1ddcc' # fork with Rails 4 support
 end
 
 group :test do

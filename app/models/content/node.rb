@@ -7,17 +7,21 @@ class Content::Node < ApplicationRecord
 
   scope :published, -> {where public: true}
   scope :owned, -> {where content_collaborators: {role: 'owner'}}
-  scope :followed, -> {where content_collaborators: {role: 'followed'}}
   scope :unmodified, -> {where 'content_nodes.created_at = content_nodes.updated_at'}
   nilify_blanks
+
+  before_save :cleanse_headnote, if: [:headnote?, :headnote_changed?]
 
   def slug
     super || self.title.parameterize
   end
 
+  def headnote
+    super.try(:html_safe)
+  end
+
+  # Creates a revision for every field even if the field remains unchanged.
   def create_revisions(content_params)
-    #Creates a revision for every field. Could check for changes but there are ever
-    #only 3 fields.
     if self.copy_of.present?
       content_params.each do |field, value|
         previous_revisions = unpublished_revisions.where(field: field)
@@ -31,18 +35,16 @@ class Content::Node < ApplicationRecord
     end
   end
 
-  def formatted_headnote
-    unless self.headnote.blank?
-      headnote_html = Nokogiri::HTML self.headnote {|config| config.strict.noblanks}
-      headnote_html.to_html.html_safe
-    end
-  end
-
   def has_collaborator?(user_id)
     collaborators.pluck(:user_id).include?(user_id)
   end
 
   private
+
+  def cleanse_headnote
+    self.headnote = HTMLUtils.cleanse(headnote)
+    true
+  end
 
   def casebook_id_for_revision
     #if it's a resource return the casebook_id

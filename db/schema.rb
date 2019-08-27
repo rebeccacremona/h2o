@@ -10,31 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_05_14_211934) do
+ActiveRecord::Schema.define(version: 2019_08_16_161852) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
   enable_extension "plpgsql"
 
-  create_table "annotations", id: :serial, force: :cascade do |t|
-    t.integer "collage_id"
-    t.string "annotation", limit: 10240
+  create_table "bulk_uploads", id: :serial, force: :cascade do |t|
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.boolean "cloned", default: false, null: false
-    t.string "xpath_start", limit: 255
-    t.string "xpath_end", limit: 255
-    t.integer "start_offset", default: 0, null: false
-    t.integer "end_offset", default: 0, null: false
-    t.string "link", limit: 255
-    t.boolean "hidden", default: false, null: false
-    t.string "highlight_only", limit: 255
-    t.integer "annotated_item_id", default: 0, null: false
-    t.string "annotated_item_type", limit: 255, default: "Collage", null: false
-    t.boolean "error", default: false, null: false
-    t.boolean "feedback", default: false, null: false
-    t.boolean "discussion", default: false, null: false
-    t.integer "user_id"
+    t.boolean "has_errors"
+    t.integer "delayed_job_id"
+    t.integer "user_id", default: 0, null: false
   end
 
   create_table "case_courts", id: :serial, force: :cascade do |t|
@@ -64,6 +51,7 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.jsonb "opinions"
     t.jsonb "citations"
     t.string "docket_number", limit: 20000
+    t.integer "annotations_count", default: 0, null: false
     t.index ["case_court_id"], name: "index_cases_on_case_court_id"
     t.index ["citations"], name: "index_cases_on_citations", using: :gin
     t.index ["created_at"], name: "index_cases_on_created_at"
@@ -88,36 +76,6 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.index ["assetable_type", "type", "assetable_id"], name: "idx_ckeditor_assetable_type"
   end
 
-  create_table "collages", id: :serial, force: :cascade do |t|
-    t.string "annotatable_type", limit: 255
-    t.integer "annotatable_id"
-    t.string "name", limit: 250, null: false
-    t.string "description", limit: 5120
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.integer "word_count"
-    t.string "ancestry", limit: 255
-    t.boolean "public", default: true
-    t.string "readable_state", limit: 5242880
-    t.integer "words_shown"
-    t.integer "user_id", default: 0, null: false
-    t.integer "annotator_version", default: 2, null: false
-    t.boolean "featured", default: false, null: false
-    t.boolean "created_via_import", default: false, null: false
-    t.integer "version", default: 1, null: false
-    t.boolean "enable_feedback", default: true, null: false
-    t.boolean "enable_discussions", default: false, null: false
-    t.boolean "enable_responses", default: false, null: false
-    t.index ["ancestry"], name: "index_collages_on_ancestry"
-    t.index ["annotatable_id"], name: "index_collages_on_annotatable_id"
-    t.index ["annotatable_type"], name: "index_collages_on_annotatable_type"
-    t.index ["created_at"], name: "index_collages_on_created_at"
-    t.index ["name"], name: "index_collages_on_name"
-    t.index ["public"], name: "index_collages_on_public"
-    t.index ["updated_at"], name: "index_collages_on_updated_at"
-    t.index ["word_count"], name: "index_collages_on_word_count"
-  end
-
   create_table "content_annotations", force: :cascade do |t|
     t.bigint "resource_id", null: false
     t.integer "start_paragraph", null: false
@@ -128,6 +86,8 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.text "content"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "global_start_offset"
+    t.integer "global_end_offset"
     t.index ["resource_id", "start_paragraph"], name: "index_content_annotations_on_resource_id_and_start_paragraph"
     t.index ["resource_id"], name: "index_content_annotations_on_resource_id"
   end
@@ -144,22 +104,11 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.index ["user_id"], name: "index_content_collaborators_on_user_id"
   end
 
-  create_table "content_images", id: :serial, force: :cascade do |t|
-    t.string "name", limit: 255
-    t.integer "page_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.string "image_file_name", limit: 255
-    t.string "image_content_type", limit: 255
-    t.integer "image_file_size"
-    t.datetime "image_updated_at"
-  end
-
   create_table "content_nodes", force: :cascade do |t|
     t.string "title"
     t.string "slug"
     t.string "subtitle"
-    t.text "headnote"
+    t.text "raw_headnote"
     t.boolean "public", default: true, null: false
     t.bigint "casebook_id"
     t.integer "ordinals", default: [], null: false, array: true
@@ -174,6 +123,7 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.bigint "root_user_id"
     t.boolean "draft_mode_of_published_casebook"
     t.boolean "cloneable", default: true, null: false
+    t.text "headnote"
     t.index ["ancestry"], name: "index_content_nodes_on_ancestry"
     t.index ["casebook_id", "ordinals"], name: "index_content_nodes_on_casebook_id_and_ordinals", using: :gin
     t.index ["casebook_id"], name: "index_content_nodes_on_casebook_id"
@@ -181,7 +131,7 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.index ["resource_type", "resource_id"], name: "index_content_nodes_on_resource_type_and_resource_id"
   end
 
-  create_table "defaults", id: :serial, force: :cascade do |t|
+  create_table "links", id: :serial, force: :cascade do |t|
     t.string "name", limit: 1024
     t.string "url", limit: 1024, null: false
     t.string "description", limit: 5242880
@@ -191,49 +141,6 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.string "content_type", limit: 255
     t.integer "user_id", default: 0
     t.string "ancestry", limit: 255
-    t.boolean "created_via_import", default: false, null: false
-  end
-
-  create_table "delayed_jobs", id: :serial, force: :cascade do |t|
-    t.integer "priority", default: 0
-    t.integer "attempts", default: 0
-    t.text "handler"
-    t.text "last_error"
-    t.datetime "run_at"
-    t.datetime "locked_at"
-    t.datetime "failed_at"
-    t.string "locked_by", limit: 255
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.string "queue", limit: 255
-    t.index ["priority", "run_at"], name: "delayed_jobs_priority"
-  end
-
-  create_table "frozen_items", id: :serial, force: :cascade do |t|
-    t.text "content"
-    t.integer "version", null: false
-    t.integer "item_id", null: false
-    t.string "item_type", limit: 255, null: false
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  create_table "media_types", id: :serial, force: :cascade do |t|
-    t.string "label", limit: 255
-    t.string "slug", limit: 255
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  create_table "medias", id: :serial, force: :cascade do |t|
-    t.string "name", limit: 255
-    t.text "content"
-    t.integer "media_type_id"
-    t.boolean "public", default: true
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.string "description", limit: 5242880
-    t.integer "user_id", default: 0, null: false
     t.boolean "created_via_import", default: false, null: false
   end
 
@@ -275,56 +182,13 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.string "user_guide_link_text", limit: 255
   end
 
-  create_table "permission_assignments", id: :serial, force: :cascade do |t|
-    t.integer "user_collection_id"
-    t.integer "user_id"
-    t.integer "permission_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  create_table "permissions", id: :serial, force: :cascade do |t|
-    t.string "key", limit: 255
-    t.string "label", limit: 255
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.string "permission_type", limit: 255
-  end
-
-  create_table "playlist_items", id: :serial, force: :cascade do |t|
-    t.integer "playlist_id"
-    t.integer "position"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.text "notes"
-    t.boolean "public_notes", default: true, null: false
-    t.string "actual_object_type", limit: 255
-    t.integer "actual_object_id"
-    t.index ["position"], name: "index_playlist_items_on_position"
-  end
-
-  create_table "playlists", id: :serial, force: :cascade do |t|
-    t.string "name", limit: 1024
-    t.text "description"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.boolean "public", default: true
-    t.string "ancestry", limit: 255
-    t.integer "position"
-    t.integer "counter_start", default: 1, null: false
-    t.integer "location_id"
-    t.string "when_taught", limit: 255
-    t.integer "user_id", default: 0, null: false
-    t.boolean "primary", default: false, null: false
-    t.boolean "featured", default: false, null: false
-    t.boolean "created_via_import", default: false, null: false
-    t.index ["ancestry"], name: "index_playlists_on_ancestry"
-    t.index ["position"], name: "index_playlists_on_position"
-  end
-
-  create_table "playlists_user_collections", id: false, force: :cascade do |t|
-    t.integer "playlist_id"
-    t.integer "user_collection_id"
+  create_table "raw_contents", force: :cascade do |t|
+    t.text "content"
+    t.string "source_type"
+    t.bigint "source_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["source_type", "source_id"], name: "index_raw_contents_on_source_type_and_source_id", unique: true
   end
 
   create_table "roles", id: :serial, force: :cascade do |t|
@@ -356,32 +220,6 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.index ["updated_at"], name: "index_sessions_on_updated_at"
   end
 
-  create_table "taggings", id: :serial, force: :cascade do |t|
-    t.integer "tag_id"
-    t.integer "taggable_id"
-    t.integer "tagger_id"
-    t.string "tagger_type", limit: 255
-    t.string "taggable_type", limit: 255
-    t.string "context", limit: 255
-    t.datetime "created_at"
-    t.index ["context"], name: "index_taggings_on_context"
-    t.index ["tag_id", "taggable_id", "taggable_type", "context", "tagger_id", "tagger_type"], name: "taggings_idx", unique: true
-    t.index ["tag_id"], name: "index_taggings_on_tag_id"
-    t.index ["taggable_id", "taggable_type", "context"], name: "index_taggings_on_taggable_id_and_taggable_type_and_context"
-    t.index ["taggable_id", "taggable_type", "tagger_id", "context"], name: "taggings_idy"
-    t.index ["taggable_id"], name: "index_taggings_on_taggable_id"
-    t.index ["taggable_type"], name: "index_taggings_on_taggable_type"
-    t.index ["tagger_id", "tagger_type"], name: "index_taggings_on_tagger_id_and_tagger_type"
-    t.index ["tagger_id"], name: "index_taggings_on_tagger_id"
-    t.index ["tagger_type"], name: "index_taggings_on_tagger_type"
-  end
-
-  create_table "tags", id: :serial, force: :cascade do |t|
-    t.string "name", limit: 255
-    t.integer "taggings_count", default: 0
-    t.index ["name"], name: "index_tags_on_name"
-  end
-
   create_table "text_blocks", id: :serial, force: :cascade do |t|
     t.string "name", limit: 255, null: false
     t.string "content", limit: 5242880, null: false
@@ -395,6 +233,7 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.boolean "enable_feedback", default: true, null: false
     t.boolean "enable_discussions", default: false, null: false
     t.boolean "enable_responses", default: false, null: false
+    t.integer "annotations_count", default: 0, null: false
     t.index ["created_at"], name: "index_text_blocks_on_created_at"
     t.index ["name"], name: "index_text_blocks_on_name"
     t.index ["updated_at"], name: "index_text_blocks_on_updated_at"
@@ -410,19 +249,6 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.integer "node_parent_id"
     t.integer "annotation_id"
     t.index ["node_id", "field"], name: "index_unpublished_revisions_on_node_id_and_field"
-  end
-
-  create_table "user_collections", id: :serial, force: :cascade do |t|
-    t.integer "user_id"
-    t.string "name", limit: 255
-    t.string "description", limit: 255
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  create_table "user_collections_users", id: false, force: :cascade do |t|
-    t.integer "user_id"
-    t.integer "user_collection_id"
   end
 
   create_table "users", id: :serial, force: :cascade do |t|
@@ -444,30 +270,10 @@ ActiveRecord::Schema.define(version: 2019_05_14_211934) do
     t.string "tz_name", limit: 255
     t.string "attribution", limit: 255, default: "Anonymous", null: false
     t.string "perishable_token", limit: 255
-    t.string "default_font_size", limit: 255, default: "10"
     t.string "title", limit: 255
     t.string "affiliation", limit: 255
     t.string "url", limit: 255
     t.text "description"
-    t.string "canvas_id", limit: 255
-    t.string "default_font", limit: 255, default: "futura"
-    t.boolean "print_titles", default: true, null: false
-    t.boolean "print_dates_details", default: true, null: false
-    t.boolean "print_paragraph_numbers", default: true, null: false
-    t.boolean "print_annotations", default: false, null: false
-    t.string "print_highlights", limit: 255, default: "original", null: false
-    t.string "print_font_face", limit: 255, default: "dagny", null: false
-    t.string "print_font_size", limit: 255, default: "small", null: false
-    t.boolean "default_show_comments", default: false, null: false
-    t.boolean "default_show_paragraph_numbers", default: true, null: false
-    t.boolean "hidden_text_display", default: false, null: false
-    t.boolean "print_links", default: true, null: false
-    t.string "toc_levels", limit: 255, default: "", null: false
-    t.string "print_export_format", limit: 255, default: "", null: false
-    t.string "image_file_name"
-    t.string "image_content_type"
-    t.integer "image_file_size"
-    t.datetime "image_updated_at"
     t.boolean "verified_professor", default: false
     t.boolean "professor_verification_requested", default: false
     t.boolean "verified_email", default: false, null: false

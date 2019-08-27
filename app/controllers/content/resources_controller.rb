@@ -42,7 +42,6 @@ class Content::ResourcesController < Content::NodeController
 
   def export
     @resource = Content::Resource.find params[:resource_id]
-    @decorated_content = @resource.decorate(context: {action_name: action_name, casebook: @casebook, section: @section, context_resource: @resource, type: 'resource'})
     @include_annotations = (params["annotations"] == "true")
 
     html = render_to_string(layout: 'export', include_annotations: @include_annotations)
@@ -83,7 +82,7 @@ class Content::ResourcesController < Content::NodeController
     elsif resource_params[:resource_attributes][:content] && @resource.resource.is_a?(TextBlock)
       @resource.resource.update_attributes(content: resource_params[:resource_attributes][:content])
       flash[:success] = "Text updated."
-    elsif resource_params[:resource_attributes][:url] && @resource.resource.is_a?(Default)
+    elsif resource_params[:resource_attributes][:url] && @resource.resource.is_a?(Link)
       @resource.resource.update_attributes(url: resource_params[:resource_attributes][:url])
       flash[:success] = "URL updated."
     end
