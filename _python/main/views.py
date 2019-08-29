@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
+from django.db.models import Prefetch
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView
@@ -7,8 +8,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import json
 
-from .serializers import ContentAnnotationSerializer, CaseSerializer, TextBlockSerializer
-from .models import Casebook, Resource, Section, Case, User
+from .serializers import ContentAnnotationSerializer, CaseSerializer, TextBlockSerializer, CasebookSerializer, SectionSerializer
+from .models import Casebook, Resource, Section, Case, TextBlock, User, ContentNode, ContentAnnotation
 
 
 class DirectTemplateView(TemplateView):
@@ -129,3 +130,35 @@ def case(request, case_id):
         'case': case,
         'include_vuejs': True
     })
+
+
+@api_view(['GET'])
+def export_casebook(request, casebook_param, format=None):
+    # for experimentation.
+    # access via /casebooks/79342/export/?format=json and similar
+
+    # Get the casebook, plus its related content nodes and annotations
+    contents = Prefetch('contents', queryset=ContentNode.objects.order_by('ordinals'))
+    casebook = get_object_or_404(Casebook.objects.prefetch_related(contents).prefetch_related('contents__annotations'), id=casebook_param['id'])
+
+    # A hack to gather associated the links, cases, and textblocks as well,
+    # since we don't have a polymorphic "resource" relationship defined for Django yet.
+    # TODO: Defaults/Links
+    cases = { c.id: c for c in Case.objects.filter(id__in=casebook.contents.filter(resource_type='Case').values_list('resource_id', flat=True)) }
+    textblocks = {t.id: t for t in TextBlock.objects.filter(id__in=casebook.contents.filter(resource_type='Case').values_list('resource_id', flat=True)) }
+
+    # Check permissions
+    # TODO: do we want to do this sooner? If yes, use capstone's fancy prefetch_related util
+    if not casebook.viewable_by(request.user):
+        return login_required_response(request)
+
+    if request.method == 'GET':
+        return Response(
+            CasebookSerializer(
+                casebook,
+                context={
+                    'cases': cases,
+                    'textblocks': textblocks
+                }
+            ).data
+        )
