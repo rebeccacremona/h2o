@@ -31,7 +31,7 @@ class ContentNodeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.ContentNode
-        fields = ['id', 'title', 'subtitle', 'headnote', 'ordinal_string', 'type', 'resource', 'annotations']
+        fields = ['id', 'title', 'subtitle', 'headnote', 'ordinals', 'ordinal_string', 'type', 'resource', 'resource_type', 'annotations']
 
     def get_title(self, node):
         return node.get_title()

@@ -141,24 +141,22 @@ def export_casebook(request, casebook_param, format=None):
     contents = Prefetch('contents', queryset=ContentNode.objects.order_by('ordinals'))
     casebook = get_object_or_404(Casebook.objects.prefetch_related(contents).prefetch_related('contents__annotations'), id=casebook_param['id'])
 
+    if not casebook.viewable_by(request.user):
+        return login_required_response(request)
+
     # A hack to gather associated the links, cases, and textblocks as well,
     # since we don't have a polymorphic "resource" relationship defined for Django yet.
     # TODO: Defaults/Links
     cases = { c.id: c for c in Case.objects.filter(id__in=casebook.contents.filter(resource_type='Case').values_list('resource_id', flat=True)) }
     textblocks = {t.id: t for t in TextBlock.objects.filter(id__in=casebook.contents.filter(resource_type='Case').values_list('resource_id', flat=True)) }
 
-    # Check permissions
-    # TODO: do we want to do this sooner? If yes, use capstone's fancy prefetch_related util
-    if not casebook.viewable_by(request.user):
-        return login_required_response(request)
-
     if request.method == 'GET':
-        return Response(
-            CasebookSerializer(
+        return render(request, 'export.html', {
+            'casebook' : json.dumps(CasebookSerializer(
                 casebook,
                 context={
                     'cases': cases,
                     'textblocks': textblocks
                 }
-            ).data
-        )
+            ).data)
+        })

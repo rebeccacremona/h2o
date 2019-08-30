@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta>
+    <meta charset="UTF-8">
+    <title>A Whole Casebook</title>
+  </meta>
+  <head>
+    <!-- Let's render an entire casebook in-browser, using Vue -->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <style>
+      /* Temporary CSS, just to make it easier to verify that this is correct */
+      /* Casebook */
+      [data-custom-style="Casebook Title"] {
+          font-size: 2em;
+          font-weight: bold;
+          margin: 1em 0;
+      }
+      [data-custom-style="Casebook Subtitle"] {
+          font-size: 1.8em;
+          font-weight: bold;
+      }
+      [data-custom-style="Casebook Headnote"] {
+          background: lightgray;
+          padding: 1em;
+      }
+      /* Section */
+      [data-custom-style="Section Number"] {
+        color: darkblue;
+        margin-top: 2em;
+      }
+      [data-custom-style="Section Title"] {
+          color: darkblue;
+          font-size: 1.8em;
+          font-style: italic;
+      }
+      [data-custom-style="Section Subtitle"] {
+          color: darkblue;
+          font-size: 1.4em;
+          font-style: italic;
+      }
+      [data-custom-style="Section Headnote"] {
+          background: lightblue;
+          padding: 1em;
+      }
+      /* Resource */
+      [data-custom-style="Resource Number"] {
+        color: darkgreen;
+        margin-top: 2em;
+      }
+      [data-custom-style="Resource Title"] {
+          color: darkgreen;
+          font-size: 1.8em;
+          font-style: italic;
+      }
+      [data-custom-style="Resource Subtitle"] {
+          color: darkgreen;
+          font-size: 1.4em;
+          font-style: italic;
+      }
+      [data-custom-style="Resource Headnote"] {
+          color: darkgreen;
+          background: lightgreen;
+          padding: 1em;
+      }
+      p.todo {
+        margin-top: 1em;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="app">
+      <book></book>
+    </div>
+
+    <script>
+      var casebook_data = JSON.parse("{{ casebook|escapejs }}");
+    </script>
+
+    {% verbatim %}
+      <script>
+
+        Vue.component('content-node', {
+          props: ['node', 'idx'],
+          template:
+          `<div v-if="node.type == 'section'">
+            <div data-custom-style='Section Number' :data-toc-idx="idx">{{ node.ordinal_string }}</div>
+            <div data-custom-style='Section Title'>{{ node.title }}</div>
+            <div v-if="node.subtitle" data-custom-style='Section Subtitle'>{{ node.subtitle }}</div>
+            <div v-if="node.headnote" data-custom-style='Section Headnote' v-html="node.headnote"></div>
+          </div>
+          <div v-else-if="node.type == 'resource'">
+            <div data-custom-style='Resource Number' :data-toc-idx="idx">{{ node.ordinal_string }}</div>
+            <div data-custom-style='Resource Title'>{{ node.title }}</div>
+            <div v-if="node.subtitle" data-custom-style='Resource Subtitle'>{{ node.subtitle }}</div>
+            <div v-if="node.headnote" data-custom-style='Resource Headnote' v-html="node.headnote"></div>
+            <p v-if="['Case', 'TextBlock'].includes(node.resource_type)" class="todo">
+              {{ node.resource_type }} coming soon here.
+            </p>
+            <div v-else-if="node.resource_type == 'Default'" data-custom-style='Resource Link'>
+              <a href="node.resource.url" target="_blank">node.resource.url</a>
+            </div>
+          </div>`
+        });
+
+        Vue.component('table-of-contents-entry', {
+          props: ['item', 'idx'],
+          template:
+          `<div class="toc-entry" :data-depth="item.ordinals.length" :data-idx="idx" :data-title="item.ordinal_string + ' ' + item.title">
+          </div>`
+        });
+
+        Vue.component('table-of-contents', {
+          props: ['contents'],
+          template:
+          `<div class="table-of-contents">
+              <table-of-contents-entry :item="item" :idx="1 + idx" v-for="(item, idx) in contents" :key="item.id"></table-of-contents-entry>
+          </div>`
+        });
+
+        Vue.component('book', {
+          data: () => {
+              return {'casebook': casebook_data}
+          },
+          template:
+          `<div class="casebook-wrapper">
+
+            <div data-custom-style='Casebook Title'>{{ casebook.title }}</div>
+            <div v-if="casebook.subtitle" data-custom-style='Casebook Subtitle'>{{ casebook.subtitle }}</div>
+            <div v-if="casebook.headnote" data-custom-style='Casebook Headnote' v-html="casebook.headnote"></div>
+
+            <table-of-contents :contents="casebook.contents"></table-of-contents>
+
+            <content-node :node="node" :idx="1 + idx" v-for="(node, idx) in casebook.contents" :key="node.id"></content-node>
+          </div>`
+        });
+
+        var app = new Vue({
+          el: '#app',
+        });
+
+      </script>
+    {% endverbatim %}
+  </body>
+ </html>
