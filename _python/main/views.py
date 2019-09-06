@@ -132,7 +132,7 @@ def case(request, case_id):
     })
 
 
-@api_view(['GET'])
+@api_view(['GET', 'OPTIONS'])
 def export_casebook(request, casebook_param, format=None):
     # for experimentation.
     # access via /casebooks/79342/export/?format=json and similar
@@ -148,15 +148,26 @@ def export_casebook(request, casebook_param, format=None):
     # since we don't have a polymorphic "resource" relationship defined for Django yet.
     # TODO: Defaults/Links
     cases = { c.id: c for c in Case.objects.filter(id__in=casebook.contents.filter(resource_type='Case').values_list('resource_id', flat=True)) }
-    textblocks = {t.id: t for t in TextBlock.objects.filter(id__in=casebook.contents.filter(resource_type='Case').values_list('resource_id', flat=True)) }
+    textblocks = {t.id: t for t in TextBlock.objects.filter(id__in=casebook.contents.filter(resource_type='TextBlock').values_list('resource_id', flat=True)) }
 
-    if request.method == 'GET':
-        return render(request, 'export.html', {
-            'casebook' : json.dumps(CasebookSerializer(
-                casebook,
-                context={
-                    'cases': cases,
-                    'textblocks': textblocks
-                }
-            ).data)
-        })
+    response = Response(CasebookSerializer(
+        casebook,
+        context={
+            'cases': cases,
+            'textblocks': textblocks
+        }
+    ).data)
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Headers"] = 'x-csrf-token'
+    return response
+
+        # python html
+        # return render(request, 'export.html', {
+        #     'casebook' : json.dumps(CasebookSerializer(
+        #         casebook,
+        #         context={
+        #             'cases': cases,
+        #             'textblocks': textblocks
+        #         }
+        #     ).data)
+        # })

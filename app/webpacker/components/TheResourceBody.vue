@@ -21,7 +21,8 @@ export default {
     FootnoteLink
   },
   props: {
-    resource: {type: Object}
+    resource: {type: Object},
+    annotations: {type: Array}
   },
   computed: {
     body() {
@@ -31,8 +32,11 @@ export default {
       return node;
     }
   },
+  // render(h) {
+  //   return tupleToVNode(h, this.$store.state.annotations.all)(nodeToTuple(this.body));
+  // }
   render(h) {
-    return tupleToVNode(h, this.$store.state.annotations.all)(nodeToTuple(this.body));
+    return tupleToVNode(h, this.annotations)(nodeToTuple(this.body));
   }
 };
 </script>
