@@ -1,8 +1,8 @@
-<template>
+<template functional>
 <div class="toc-entry"
-    :data-depth="item.ordinals.length"
-    :data-idx="idx"
-    :data-title="item.ordinal_string + ' ' + item.title">
+    :data-depth="props.item.ordinals.length"
+    :data-idx="props.idx"
+    :data-title="props.item.ordinal_string + ' ' + props.item.title">
 </div>
 </template>
 

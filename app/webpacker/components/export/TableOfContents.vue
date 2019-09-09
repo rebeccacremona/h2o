@@ -1,20 +1,20 @@
-<template>
+<template functional>
 <div class="table-of-contents">
-    <TableOfContentsEntry
+    <table-of-contents-entry
         :item="item"
         :idx="1 + idx"
-        v-for="(item, idx) in contents"
+        v-for="(item, idx) in props.contents"
         :key="item.id">
-    </TableOfContentsEntry>
+    </table-of-contents-entry>
 </div>
 </template>
 
 <script>
+import Vue from "vue"
 import TableOfContentsEntry from "./TableOfContentsEntry";
+Vue.component("table-of-contents-entry", TableOfContentsEntry);
+
 export default {
     props: ['contents'],
-    components: {
-      TableOfContentsEntry
-    }
 }
 </script>

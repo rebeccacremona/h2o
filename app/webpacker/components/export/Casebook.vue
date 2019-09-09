@@ -1,26 +1,25 @@
-<template>
+<template functional>
 <div class="casebook-wrapper">
 
-  <div data-custom-style='Casebook Title'>{{ casebook.title }}</div>
-  <div v-if="casebook.subtitle" data-custom-style='Casebook Subtitle'>{{ casebook.subtitle }}</div>
-  <div v-if="casebook.headnote" data-custom-style='Casebook Headnote' v-html="casebook.headnote"></div>
+  <div data-custom-style='Casebook Title'>{{ props.casebook.title }}</div>
+  <div v-if="props.casebook.subtitle" data-custom-style='Casebook Subtitle'>{{ props.casebook.subtitle }}</div>
+  <div v-if="props.casebook.headnote" data-custom-style='Casebook Headnote' v-html="props.casebook.headnote"></div>
 
-  <TableOfContents :contents="casebook.contents"></TableOfContents>
+  <table-of-contents :contents="props.casebook.contents"></table-of-contents>
 
-  <ContentNode :node="node" :idx="1 + idx" v-for="(node, idx) in casebook.contents" :key="node.id"></ContentNode>
+  <content-node :node="node" :idx="1 + idx" v-for="(node, idx) in props.casebook.contents" :key="node.id"></content-node>
 
 </div>
 </template>
 
 <script>
+import Vue from "vue"
 import TableOfContents from "./TableOfContents";
 import ContentNode from "./ContentNode";
+Vue.component("table-of-contents", TableOfContents);
+Vue.component("content-node", ContentNode);
 
 export default {
   props: ['casebook'],
-  components: {
-    TableOfContents,
-    ContentNode
-  }
 }
 </script>
