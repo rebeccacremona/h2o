@@ -1,0 +1,30 @@
+module Vue
+  module SSR_EXPORT
+    class << self
+      JS_SOURCE_PATH = Rails.root.join('lib','vue','ssr_export.js')
+      JS_SETUP_PATH = Rails.root.join('test','javascript','mocha_setup.js')
+      WEBPACK_CONFIG_PATH = Rails.root.join('config','webpack','test.js')
+
+      def compile
+        digest = Digest::MD5.hexdigest(File.read(JS_SOURCE_PATH))
+        js_build_path = Rails.root.join('tmp',"lib-vue-ssr-export.js")
+
+        `NODE_ENV=production bin/webpack --entry #{JS_SOURCE_PATH} --output #{js_build_path} --config #{WEBPACK_CONFIG_PATH} --target node --mode production`
+
+      end
+
+      # def render
+      #   script = 'tmp/lib-vue-ssr-export.js'
+      #   compile do |script|
+      #     node_cmd = "node -r #{script}"
+      #     IO.popen(node_cmd, 'r+') do |io|
+      #       io.write({content: content,
+      #                 annotations: annotations}.to_json)
+      #       io.close_write
+      #       io.read
+      #     end
+      #   end
+      # end
+    end
+  end
+end

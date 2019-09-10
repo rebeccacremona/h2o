@@ -6,7 +6,9 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
 import json
+import subprocess
 
 from .serializers import ContentAnnotationSerializer, CaseSerializer, TextBlockSerializer, CasebookSerializer, SectionSerializer
 from .models import Casebook, Resource, Section, Case, TextBlock, User, ContentNode, ContentAnnotation
@@ -150,15 +152,50 @@ def export_casebook(request, casebook_param, format=None):
     cases = { c.id: c for c in Case.objects.filter(id__in=casebook.contents.filter(resource_type='Case').values_list('resource_id', flat=True)) }
     textblocks = {t.id: t for t in TextBlock.objects.filter(id__in=casebook.contents.filter(resource_type='TextBlock').values_list('resource_id', flat=True)) }
 
-    response = Response(CasebookSerializer(
-        casebook,
-        context={
-            'cases': cases,
-            'textblocks': textblocks
-        }
-    ).data)
+    data = CasebookSerializer(
+            casebook,
+            context={
+                'cases': cases,
+                'textblocks': textblocks
+            }
+    ).data
+    response = Response(data)
     response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Headers"] = 'x-csrf-token'
+
+    # s = subprocess.check_output(
+    #     ["node", "-r", "../test/javascript/mocha_setup.js", "../tmp/lib-vue-ssr-export.js"],
+    #     input=bytes(json.dumps(data), 'utf-8')
+    # )
+
+    node = subprocess.Popen(
+        ["node", "-r", "../test/javascript/mocha_setup.js", "../tmp/lib-vue-ssr-export.js"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE
+    )
+    pandoc = subprocess.Popen([
+        "pandoc",
+        '--from html',
+        '--to markdown'
+        # '--reference-doc "lib/pandoc/reference.docx"',
+        # '--docx-preserve-style',
+        # "--output #{file_path}",
+        # '--quiet'
+        ],
+        stdin=node.stdout,
+        stdout=subprocess.PIPE
+    )
+    # wc = subprocess.Popen(['wc', '-w'], stdin=another_cat.stdout, stdout=subprocess.PIPE)
+
+    outs, errs = node.communicate(bytes(json.dumps(data), 'utf-8'))
+
+    # cat.kill()
+    # another_cat.kill()
+    # wc.kill()
+    # wc.communicate()
+
+    print(outs)
+
     return response
 
         # python html

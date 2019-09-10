@@ -4,14 +4,15 @@ ENV LANG=C.UTF-8 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_SRC=/usr/local/src
+    PIP_SRC=/usr/local/src \
+    NODE_PATH=/node_modules
 
 RUN mkdir /app
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y nano
 
-# nodejs
+# nodejs, as installed in capstone
 # write a .yarnrc that will only be found inside the docker guest, and will cause
 # node_modules to be written to /node_modules instead of ./node_modules:
 RUN echo "--modules-folder /node_modules" > /.yarnrc
@@ -34,3 +35,7 @@ COPY _python/requirements.txt /app/_python
 RUN pip install -U pip \
     && pip install -r requirements.txt \
     && rm requirements.txt
+
+# Custom version of Pandoc, for export
+RUN wget https://lilresources.s3.amazonaws.com/h2o/pandoc-889810d -O /usr/bin/pandoc \
+    && chmod +x /usr/bin/pandoc
