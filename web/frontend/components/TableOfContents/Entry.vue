@@ -10,7 +10,12 @@
         <div :class="{'section-number': true, 'is-instructional-material': item.is_instructional_material}">{{ item.ordinal_string }}</div>
 
         <div class="resource-container" v-if="isLegalDoc">
-          <a :href="url" class="section-title case-section-title">{{ item.title }}</a>
+          <div
+            @touchstart.stop.prevent="pass"
+            @touchcancel.stop.prevent="pass"
+            @touchmove.stop.prevent="pass">
+            <a :href="url" class="section-title case-section-title" @touchend.stop.prevent="clickMe($event)">{{ item.title }}</a>
+          </div>
           <div class="case-metadata-container">
             <div class="resource-case">{{ item.citation }}</div>
             <div class="resource-date">{{ item.decision_date }}</div>
@@ -21,8 +26,13 @@
             @click="auditThisCase"
           >{{ item.title }}</button>
         </div>
-        <div class="resource-container" v-else>
-          <a :href="url" class="section-title">{{ item.title }}</a>
+        <div
+          class="resource-container"
+          @touchstart.stop.prevent="pass"
+          @touchcancel.stop.prevent="pass"
+          @touchmove.stop.prevent="pass"
+          v-else>
+          <a :href="url" class="section-title" @touchend.stop.prevent="clickMe($event)">{{ item.title }}</a>
         </div>
       </div>
 
@@ -96,8 +106,11 @@
         </span>
         <div class="section-number">{{ item.ordinal_string }}</div>
         <div class="section-container">
-          <div class="section-title">
-            <a :href="url" class="section-title">{{ item.title }}</a>
+          <div class="section-title"
+            @touchstart.stop.prevent="pass"
+            @touchcancel.stop.prevent="pass"
+            @touchmove.stop.prevent="pass">
+            <a :href="url" class="section-title" @touchend.stop.prevent="clickMe($event)">{{ item.title }}</a>
           </div>
         </div>
       </div>
@@ -230,7 +243,7 @@ export default {
     pass: function(){
       console.log("Doing nothing.");
     },
-    clickMe: function(message, event) {
+    clickMe: function(event) {
       event.target.click();
     },
     auditThisCase: function() {
