@@ -43,19 +43,32 @@
                >{{ item.resource_type === 'TextBlock' ? 'Text' : item.resource_type }}</div>
         </div>
             <div v-bind:class="{'actions': !showDelete, 'actions-extra': showDelete}" v-if="editing">
-      <button
-        :aria-label="'Delete ' +item.title"
-        class="action-delete"
-        v-on:click="markForDeletion"
-        v-if="!showDelete"
-        ></button>
-      <div class="action-confirmation" v-else>
-        <div class="action-align-resource">
-          <button
-            class="action-confirm-delete btn btn-danger"
-            v-on:click="confirmDeletion"
-            >Delete {{item.resource_type !== null && item.resource_type !== 'Section' ? '' : 'section and all contents'}}</button>
-          <button class="action-cancel-delete btn" v-on:click="cancelDeletion" v-focus>Keep</button>
+      <div
+        @touchstart.stop.prevent="pass"
+        @touchcancel.stop.prevent="pass"
+        @touchmove.stop.prevent="pass"
+      >
+        <button
+          :aria-label="'Delete ' +item.title"
+          class="action-delete"
+          @touchend.stop.prevent="markForDeletion"
+          @click.stop.prevent="markForDeletion"
+          v-if="!showDelete"
+          ></button>
+        <div class="action-confirmation" v-else>
+          <div class="action-align-resource">
+            <button
+              class="action-confirm-delete btn btn-danger"
+              @touchend.stop.prevent="confirmDeletion"
+              @click.stop.prevent="confirmDeletion"
+              >Delete {{item.resource_type !== null && item.resource_type !== 'Section' ? '' : 'section and all contents'}}</button>
+            <button
+              class="action-cancel-delete btn"
+              @touchend.stop.prevent="cancelDeletion"
+              @click.stop.prevent="cancelDeletion"
+              v-focus
+              >Keep</button>
+          </div>
         </div>
       </div>
     </div>
@@ -65,16 +78,22 @@
 
     <div class="listing section" v-bind:class="['listing', 'section' ,item.children.length > 0 ? 'child-present' : 'child-free', editing ? 'editing' : '' ]" v-else>
       <div class="list-left">
-        <button
-          aria-role="heading"
-          :aria-expanded="!collapsed ? 'true' : 'false'"
-          :aria-label="collapsed ? 'expand ' + item.title : 'collapse ' + item.title"
-          v-on:click="toggleSectionExpanded"
-          class="action-expand"
-          v-if="item.children.length > 0 || collapsed"
-          >
-          <collapse-triangle :collapsed="collapsed" />
-        </button>
+        <span
+          @touchstart.stop.prevent="pass"
+          @touchcancel.stop.prevent="pass"
+          @touchmove.stop.prevent="pass">
+          <button
+            aria-role="heading"
+            :aria-expanded="!collapsed ? 'true' : 'false'"
+            :aria-label="collapsed ? 'expand ' + item.title : 'collapse ' + item.title"
+            @touchend.stop.prevent="toggleSectionExpanded"
+            @click.stop.prevent="toggleSectionExpanded"
+            class="action-expand"
+            v-if="item.children.length > 0 || collapsed"
+            >
+            <collapse-triangle :collapsed="collapsed" />
+          </button>
+        </span>
         <div class="section-number">{{ item.ordinal_string }}</div>
         <div class="section-container">
           <div class="section-title">
@@ -89,20 +108,30 @@
         <div v-else>
           &nbsp;
         </div>
-    <div v-bind:class="{'actions': !showDelete, 'actions-extra': showDelete}"  v-if="editing">
+    <div v-bind:class="{'actions': !showDelete, 'actions-extra': showDelete}"  v-if="editing"
+        @touchstart.stop.prevent="pass"
+        @touchcancel.stop.prevent="pass"
+        @touchmove.stop.prevent="pass"
+      >
       <button
         :aria-label="'Delete ' +item.title"
         class="action-delete"
-        v-on:click="markForDeletion"
+        @touchend.stop.prevent="markForDeletion"
+        @click.stop.prevent="markForDeletion"
         v-if="!showDelete"
         ></button>
       <div class="action-confirmation" v-else>
         <div class="action-align-section">
           <button
             class="action-confirm-delete btn btn-danger"
-            v-on:click="confirmDeletion"
+            @touchend.stop.prevent="confirmDeletion"
+            @click.stop.prevent="confirmDeletion"
             >Delete {{item.resource_type !== null && item.resource_type !== 'Section' ? '' : 'section and all contents'}}</button>
-          <button class="action-cancel-delete btn" v-on:click="cancelDeletion" v-focus>Keep</button>
+          <button
+            class="action-cancel-delete btn"
+            @touchend.stop.prevent="cancelDeletion"
+            @click.stop.prevent="cancelDeletion"
+            v-focus>Keep</button>
         </div>
       </div>
     </div>
@@ -198,6 +227,12 @@ export default {
     }
   },
   methods: {
+    pass: function(){
+      console.log("Doing nothing.");
+    },
+    clickMe: function(message, event) {
+      event.target.click();
+    },
     auditThisCase: function() {
       this.$store.dispatch('table_of_contents/setAudit', {id: this.item.id });
     },
